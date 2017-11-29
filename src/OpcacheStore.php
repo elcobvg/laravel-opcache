@@ -164,7 +164,7 @@ class OpcacheStore implements Store
         if ($this->enabled) {
             opcache_invalidate($this->filePath($key), true);
         }
-        return unlink($this->filePath($key));
+        return @unlink($this->filePath($key));
     }
 
     /**
