@@ -10,7 +10,6 @@
             "email": "elco.brouwer@gmail.com"
         }
     ],
-    "prefer-stable": true,
     "require": {
         "php": ">=7.0"
     },
