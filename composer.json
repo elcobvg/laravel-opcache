@@ -25,9 +25,9 @@
     },
     "extra": {
         "laravel": {
-            "providers": {
+            "providers": [
                 "ElcoBvg\\Opcache\\OpcacheServiceProvider"
-            }
+            ]
         }
     }
 }
