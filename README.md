@@ -33,11 +33,11 @@ And enable the driver in your `.env` file or in config/cache.php
 
 ### OPcache configuration
 
-*OPcache can only be compiled as a shared extension. You must compile PHP with the --enable-opcache option for OPcache to be available.*
+*OPcache can only be compiled as a shared extension. You must compile PHP with the `--enable-opcache` option for OPcache to be available.*
 
 OPcache must be enabled and configured in your php.ini. Look for the section starting with `[OPcache]` and enter the desired values. The more memory you can assign to OPcache, the faster your cache will be. The `opcache.max_accelerated_files` value should be high enough to hold all objects that need to be cached. 
 
-Since *all* PHP files will be cached with OPcache, it is not advisable to use it in a development environment, so only enable it in production.
+Since *all* PHP files will be cached with OPcache, it is not advisable to use it in a development environment, so only enable it in production. Alternatively, you can exclude PHP files from being cached by specifying a blacklist file with the `opcache.blacklist_filename` option. 
 
 ```shell
   opcache.enable=1

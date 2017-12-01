@@ -2,21 +2,13 @@
 
 namespace ElcoBvg\Opcache;
 
+use Illuminate\Cache\TagSet;
+use Illuminate\Cache\TaggableStore;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Contracts\Cache\Store;
+use Illuminate\Contracts\Cache\Store as StoreContract;
 use Illuminate\Cache\RetrievesMultipleKeys;
 
-/**
- * OpcacheStore - cache driver for Laravel
- *
- * This source file is subject to the MIT license that is bundled
- * with this source code in the file LICENSE.
- *
- * @author  Elco Brouwer von Gonzenbach <elco.brouwer@gmail.com>
- * @version 0.1.0
- *
- */
-class OpcacheStore implements Store
+class Store extends TaggableStore implements StoreContract
 {
     use RetrievesMultipleKeys;
 
@@ -28,7 +20,7 @@ class OpcacheStore implements Store
     protected $directory;
 
     /**
-     * A string that should be prepended to keys.
+     * String that should be prepended to keys.
      *
      * @var string
      */
@@ -54,11 +46,22 @@ class OpcacheStore implements Store
         if (extension_loaded('Zend OPcache')) {
             $this->enabled = true;
         } elseif (config('app.debug')) {
-            Log::error('You do not have the Zend OPcache extension loaded!');
+            Log::warning('You do not have the Zend OPcache extension loaded!');
         }
 
-        $this->prefix = str_slug($prefix ?: config('cache.prefix', 'opcache'), '-');
+        $this->prefix = str_slug($prefix ?: config('app.name', 'opcache'), '-');
         $this->directory = $directory ?: config('cache.stores.file.path');
+    }
+    
+    /**
+     * Begin executing a new tags operation.
+     *
+     * @param  array|mixed  $names
+     * @return \Illuminate\Cache\TaggedCache
+     */
+    public function tags($names)
+    {
+        return new Repository($this, new TagSet($this, is_array($names) ? $names : func_get_args()));
     }
 
     /**
@@ -84,7 +87,7 @@ class OpcacheStore implements Store
      * @param  string  $key
      * @param  mixed   $value
      * @param  float|int  $minutes
-     * @return void
+     * @return bool
      */
     public function put($key, $value, $minutes = 0)
     {
@@ -111,8 +114,7 @@ class OpcacheStore implements Store
             return false;
         }
 
-        $this->put($key, $value, $minutes);
-        return true;
+        return $this->put($key, $value, $minutes);
     }
 
     /**
@@ -125,8 +127,7 @@ class OpcacheStore implements Store
     public function increment($key, $value = 1)
     {
         $val = (int) $this->get($key) + $value;
-        $this->put($key, $val);
-        return $val;
+        return $this->put($key, $val) ? $val : false;
     }
 
     /**
@@ -150,7 +151,7 @@ class OpcacheStore implements Store
      */
     public function forever($key, $value)
     {
-        $this->put($key, $value, 0);
+        return $this->put($key, $value, 0);
     }
 
     /**
@@ -169,16 +170,17 @@ class OpcacheStore implements Store
 
     /**
      * Remove all items from the cache.
-     * NOTE: This method resets the entire opcode cache.
      *
      * @return bool
      */
     public function flush()
     {
+        $files = glob($this->prefixPath() . '*');
+
         if ($this->enabled) {
-            opcache_reset();
+            array_map('opcache_invalidate', $files);
         }
-        return (bool) array_map('unlink', glob($this->directory . '/' . $this->prefix . '*'));
+        return (bool) array_map('unlink', $files);
     }
 
     /**
@@ -199,7 +201,17 @@ class OpcacheStore implements Store
      */
     protected function filePath(string $key)
     {
-        return $this->directory . '/' . $this->prefix . '-' . sha1($key);
+        return $this->prefixPath() . '-' . sha1($key);
+    }
+
+    /**
+     * Get directory path with prefix
+     *
+     * @return string
+     */
+    public function prefixPath()
+    {
+        return $this->directory . '/' . $this->prefix;
     }
 
     /**
@@ -208,12 +220,12 @@ class OpcacheStore implements Store
      * @param   string $key
      * @param   int    $exp
      * @param   mixed  $val
-     * @return  boolean
+     * @return  bool
      */
     protected function writeFile(string $key, int $exp, $val)
     {
-        // Write to temp file first to ensure atomicity
-        $tmp = $this->directory . '/' . sha1($key) . '-' . uniqid('', true) . '.tmp';
+        // Write to temp file first to ensure atomicity. Use crc32 for speed
+        $tmp = $this->directory . '/' . crc32($key) . '-' . uniqid('', true) . '.tmp';
         file_put_contents($tmp, '<?php $exp = ' . $exp . '; $val = ' . $val . ';', LOCK_EX);
         return rename($tmp, $this->filePath($key));
     }
@@ -226,7 +238,8 @@ class OpcacheStore implements Store
      */
     protected function expiration($minutes)
     {
-        return $minutes === 0 ? 9999999999 : strtotime('+' . $minutes . ' minutes');
+        $seconds = (int) $minutes * 60;
+        return $minutes === 0 ? 9999999999 : strtotime('+' . $seconds . ' seconds');
     }
 
     /**
@@ -234,7 +247,7 @@ class OpcacheStore implements Store
      *
      * @param  string $key
      * @param  int    $seconds
-     * @return boolean
+     * @return bool
      */
     public function extendExpiration(string $key, int $minutes)
     {
@@ -243,6 +256,5 @@ class OpcacheStore implements Store
         if (isset($exp)) {
             return $this->writeFile($key, strtotime('+' . $minutes . ' minutes', $exp), $val);
         }
-        Log::warning('No expiration time found for: ' . $key);
     }
 }
