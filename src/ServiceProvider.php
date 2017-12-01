@@ -24,7 +24,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         if (! Collection::hasMacro('__set_state')) {
             Collection::macro('__set_state', function (array $array) {
                 $obj = new Collection;
-                $obj->items = $array->items;
+                $obj->items = $array['items'];
                 return $obj;
             });
         }
