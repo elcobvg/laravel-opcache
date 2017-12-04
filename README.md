@@ -18,7 +18,7 @@ Laravel 5.5 uses Package Auto-Discovery, so doesn't require you to manually add 
 If you don't use auto-discovery or Laravel version 5.4 or older, add the ServiceProvider to the providers array in config/app.php
 
 ```php
-ElcoBvg\Opcache\OpcacheServiceProvider::class,
+ElcoBvg\Opcache\ServiceProvider::class,
 ```
 
 Then, make sure you add the driver option to the stores array in config/cache.php
@@ -60,3 +60,4 @@ Since *all* PHP files will be cached with OPcache, it is not advisable to use it
 - [PHP OPcache Documentation](http://php.net/manual/en/book.opcache.php)
 - [Pecl::Package::ZendOpcache](http://pecl.php.net/package/ZendOpcache)
 
+`
