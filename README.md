@@ -53,6 +53,10 @@ Since *all* PHP files will be cached with OPcache, it is not advisable to use it
 
 **Graceful degradation:** when OPcache is not enabled or installed, or memory is insufficient, this driver will still work but will read from the cached files instead of from memory. Since there's no unserialization required, it will still be faster than a regular file cache driver.
 
+### Caching Eloquent models
+
+Depending on how you've configured caching in your project, you may want to cache full Eloquent models. If so, base your model classes on `ElcoBvG\Opcache\Model` instead of the regular Eloquent base model class, so they can be retrieved correctly from cache.
+
 ### References
 
 - [500X Faster Caching than Redis/Memcache/APC in PHP & HHVM](https://blog.graphiq.com/500x-faster-caching-than-redis-memcache-apc-in-php-hhvm-dcd26e8447ad)
