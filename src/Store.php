@@ -246,15 +246,16 @@ class Store extends TaggableStore implements StoreContract
      * Extend expiration time with given minutes
      *
      * @param  string $key
-     * @param  int    $seconds
+     * @param  int    $minutes
      * @return bool
      */
-    public function extendExpiration(string $key, int $minutes)
+    public function extendExpiration(string $key, int $minutes = 1)
     {
         @include $this->filePath($key);
 
         if (isset($exp)) {
-            return $this->writeFile($key, strtotime('+' . $minutes . ' minutes', $exp), $val);
+            $extended = strtotime('+' . $minutes . ' minutes', $exp);
+            return $this->writeFile($key, $extended, var_export($val, true));
         }
     }
 }
