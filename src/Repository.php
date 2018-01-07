@@ -19,14 +19,11 @@ class Repository extends TaggedCache implements CacheContract
      */
     public function remember($key, $minutes, Closure $callback)
     {
-        if (! is_null($value = $this->get($key))) {
-            return $value;
+        if (is_null($value = $this->get($key))) {
+            // Extend expiration of cache file so we have time to generate a new one
+            $this->store->extendExpiration($this->itemKey($key), 10);
+            $this->put($key, $value = $callback(), $minutes);
         }
-
-        // Extend expiration of cache file so we have time to generate a new one
-        $this->store->extendExpiration($this->itemKey($key), 10);
-
-        $this->put($key, $value = $callback(), $minutes);
         return $value;
     }
 

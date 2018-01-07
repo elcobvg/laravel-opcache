@@ -75,7 +75,6 @@ class Store extends TaggableStore implements StoreContract
         @include $this->filePath($key);
 
         if (isset($exp) && $exp < time()) {
-            // $this->forget($key);
             return null;
         }
         return isset($val) ? $val : null;
@@ -113,7 +112,6 @@ class Store extends TaggableStore implements StoreContract
             || file_exists($this->filePath($key))) {
             return false;
         }
-
         return $this->put($key, $value, $minutes);
     }
 
@@ -257,5 +255,6 @@ class Store extends TaggableStore implements StoreContract
             $extended = strtotime('+' . $minutes . ' minutes', $exp);
             return $this->writeFile($key, $extended, var_export($val, true));
         }
+        return false;
     }
 }
