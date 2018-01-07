@@ -1,4 +1,4 @@
-# laravel-opcache
+# laravel-opcache [![Build Status](https://travis-ci.org/elcobvg/laravel-opcache.svg?branch=master)](https://travis-ci.org/elcobvg/laravel-opcache)
 Custom OPcache Cache Driver for Laravel. Faster than Redis, Memcache or APC.
 
 This package adds a cache driver to your Laravel project that uses PHP engine’s in-memory file caching (OPcache) to cache application data.
