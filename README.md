@@ -63,5 +63,3 @@ Depending on how you've configured caching in your project, you may want to cach
 - [Make your Laravel App Fly with PHP OPcache](https://medium.com/appstract/make-your-laravel-app-fly-with-php-opcache-9948db2a5f93)
 - [PHP OPcache Documentation](http://php.net/manual/en/book.opcache.php)
 - [Pecl::Package::ZendOpcache](http://pecl.php.net/package/ZendOpcache)
-
-`
