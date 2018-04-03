@@ -20,6 +20,13 @@ class Store extends TaggableStore implements StoreContract
     protected $directory;
 
     /**
+     * The file cache sub directory
+     *
+     * @var string|null
+     */
+    protected $subDirectory;
+
+    /**
      * String that should be prepended to keys.
      *
      * @var string
@@ -38,7 +45,6 @@ class Store extends TaggableStore implements StoreContract
      *
      * @param  string    $prefix
      * @param  string    $directory
-     * @return void
      */
     public function __construct(string $prefix = '', string $directory = '')
     {
@@ -50,7 +56,11 @@ class Store extends TaggableStore implements StoreContract
         }
 
         $this->prefix = str_slug($prefix ?: config('app.name', 'opcache'), '-');
-        $this->directory = $directory ?: config('cache.stores.file.path');
+
+        /*
+         * In case if `OpCache` file path not being set we will use `file` driver path
+         */
+        $this->directory = $directory ?: config('cache.stores.opcache.path', config('cache.stores.file.path'));
     }
     
     /**
@@ -151,7 +161,7 @@ class Store extends TaggableStore implements StoreContract
      *
      * @param  string  $key
      * @param  mixed   $value
-     * @return void
+     * @return bool
      */
     public function forever($key, $value)
     {
@@ -179,12 +189,20 @@ class Store extends TaggableStore implements StoreContract
      */
     public function flush()
     {
-        $files = glob($this->prefixPath() . '*');
+        /*
+         * Since we now able to set sub directory to keep files
+         * in separated folders we will need to flush all files recursively
+         */
+        $directory = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->getDirectory()));
 
-        if ($this->enabled) {
-            array_map('opcache_invalidate', $files);
+        foreach ($directory as $filename => $file) {
+            if ($this->enabled) {
+                opcache_invalidate($filename, true);
+            }
+            @unlink($filename);
         }
-        return (bool) array_map('unlink', $files);
+
+        return true;
     }
 
     /**
@@ -215,7 +233,40 @@ class Store extends TaggableStore implements StoreContract
      */
     public function prefixPath()
     {
-        return $this->directory . '/' . $this->prefix;
+        return $this->getDirectory() . DIRECTORY_SEPARATOR . $this->prefix;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDirectory()
+    {
+        if (is_string($this->subDirectory)) {
+            $sep = DIRECTORY_SEPARATOR;
+
+            return rtrim($this->directory, $sep) . $sep . ltrim($this->subDirectory, $sep);
+        }
+
+        return $this->directory;
+    }
+
+    /**
+     * @param $subDirectory
+     * @return $this
+     */
+    public function setSubDirectory($subDirectory)
+    {
+        $this->subDirectory = $subDirectory;
+
+        return $this;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getSubDirectory()
+    {
+        return $this->subDirectory;
     }
 
     /**
