@@ -23,10 +23,16 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         // Extend Collection to implement __set_state magic method
         if (! Collection::hasMacro('__set_state')) {
             Collection::macro('__set_state', function (array $array) {
-                $obj = new Collection;
-                $obj->items = $array['items'];
-                return $obj;
+                return new Collection($array['items']);
             });
         }
+    }
+
+    /**
+     * @return void
+     */
+    public function register()
+    {
+
     }
 }
