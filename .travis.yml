@@ -1,5 +1,10 @@
 language: php
 
+php:
+    - 7.0.2
+    - 7.0.2
+    - 7.2
+
 matrix:
   include:
     - php: 7.0.2
@@ -8,9 +13,6 @@ matrix:
     - php: 7.0.4
       env: TESTBENCH_VERSION=3.4.*
       env: PHPUNIT_VERSION=7.0.0
-    - php: 7.2
-      env: TESTBENCH_VERSION=3.4.*
-      env: PHPUNIT_VERSION=7.0.*
     - php: 7.2
       env: TESTBENCH_VERSION=3.6.*
       env: PHPUNIT_VERSION=7.0.*
