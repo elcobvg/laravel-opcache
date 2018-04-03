@@ -8,10 +8,13 @@ matrix:
   include:
     - php: 7.0
       env: TESTBENCH_VERSION=3.4.*
+      env: PHPUNIT_VERSION=7.0.0
     - php: 7.2
       env: TESTBENCH_VERSION=3.4.*
+      env: PHPUNIT_VERSION=7.0.*
     - php: 7.2
       env: TESTBENCH_VERSION=3.6.*
+      env: PHPUNIT_VERSION=7.0.*
 
 before_script:
   - cp .env.travis .env
