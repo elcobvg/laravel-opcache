@@ -22,12 +22,11 @@ matrix:
     - php: 7.2
       env: TESTBENCH_VERSION=^3.6.*
 
-before_install:
+before_script:
   - cp .env.travis .env
   - composer self-update
-  - composer require "orchestra/testbench:$TESTBENCH_VERSION" --no-update
-
-install: composer update --prefer-source --no-interaction --dev
+  - composer require orchestra/testbench:${TESTBENCH_VERSION} --no-update
+  - composer update --prefer-source --no-interaction --dev
 
 script:
   - vendor/bin/phpunit
