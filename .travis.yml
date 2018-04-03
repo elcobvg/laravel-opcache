@@ -8,8 +8,7 @@ php:
 before_script:
   - cp .env.travis .env
   - composer self-update
-  - composer clearcache
-  - composer install --prefer-source --no-interaction --dev
+  - composer install --no-interaction
 
 script:
   - vendor/bin/phpunit
