@@ -1,8 +1,7 @@
 language: php
 
 php:
-  - 7.0.2
-  - 7.0.4
+  - 7.0
   - 7.2
 
 matrix:
@@ -12,12 +11,13 @@ matrix:
     - php: 7.2
       env: TESTBENCH_VERSION=3.4.*
     - php: 7.2
-      env: TESTBENCH_VERSION=^3.6.*
+      env: TESTBENCH_VERSION=3.6.*
 
 before_script:
   - cp .env.travis .env
   - composer self-update
   - composer require orchestra/testbench:${TESTBENCH_VERSION} --no-update
+  - composer require phpunit/phpunit":${PHPUNIT_VERSION} --no-update
   - composer update --prefer-source --no-interaction --dev
 
 script:
