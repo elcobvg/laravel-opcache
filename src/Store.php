@@ -75,6 +75,12 @@ class Store extends TaggableStore implements StoreContract
         @include $this->filePath($key);
 
         if (isset($exp) && $exp < time()) {
+            /*
+             * In order to free disc space and memory we need to
+             * delete expired file from our disc and invalidate it from OpCache
+             */
+            $this->forget($key);
+
             return null;
         }
         return isset($val) ? $val : null;
