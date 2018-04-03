@@ -5,10 +5,29 @@ php:
   - 7.0.4
   - 7.2
 
-before_script:
+matrix:
+  include:
+    - php: 7.0.2
+      env: TESBENCH_VERSION=3.2.*
+    - php: 7.0.4
+      env: TESBENCH_VERSION=3.2.*
+    - php: 7.2
+      env: TESBENCH_VERSION=3.2.*
+    - php: 7.0.2
+      env: TESBENCH_VERSION=3.4.*
+    - php: 7.0.4
+      env: TESBENCH_VERSION=3.4.*
+    - php: 7.2
+      env: TESBENCH_VERSION=3.4.*
+    - php: 7.2
+      env: TESBENCH_VERSION=^3.6.*
+
+before_install:
   - cp .env.travis .env
   - composer self-update
-  - composer install --no-interaction
+  - composer require "orchestra/testbench:${TESBENCH_VERSION}" --no-update
+
+install: composer update --prefer-source --no-interaction --dev
 
 script:
   - vendor/bin/phpunit
