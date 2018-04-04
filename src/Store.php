@@ -71,7 +71,25 @@ class Store extends TaggableStore implements StoreContract
      */
     public function tags($names)
     {
-        return new Repository($this, new TagSet($this, is_array($names) ? $names : func_get_args()));
+        $names = is_array($names) ? $names : func_get_args();
+
+        /*
+         * Now we are able to flush only tagged cache items
+         */
+        if (! empty($names)) {
+            $this->setSubDirectory($this->tagsSubDir($names));
+        }
+
+        return new Repository($this, new TagSet($this, $names));
+    }
+
+    /**
+     * @param array $names
+     * @return string
+     */
+    protected function tagsSubDir(array $names)
+    {
+        return implode('_', $names);
     }
 
     /**
@@ -189,17 +207,39 @@ class Store extends TaggableStore implements StoreContract
      */
     public function flush()
     {
+        return $this->clearCacheInDirectory($this->getDirectory());
+    }
+
+    /**
+     * @return bool
+     */
+    public function flushSub()
+    {
+        return $this->clearCacheInDirectory($this->getFullDirectory(), true);
+    }
+
+    /**
+     * @param $dir
+     * @param bool $removeDirectory
+     * @return bool
+     */
+    public function clearCacheInDirectory($dir, $removeDirectory = false)
+    {
         /*
          * Since we now able to set sub directory to keep files
          * in separated folders we will need to flush all files recursively
          */
-        $directory = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->getDirectory()));
+        $directory = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
 
         foreach ($directory as $filename => $file) {
             if ($this->enabled) {
                 opcache_invalidate($filename, true);
             }
             @unlink($filename);
+        }
+
+        if ($removeDirectory) {
+            return @rmdir($dir);
         }
 
         return true;
@@ -233,7 +273,23 @@ class Store extends TaggableStore implements StoreContract
      */
     public function prefixPath()
     {
-        return $this->getDirectory() . DIRECTORY_SEPARATOR . $this->prefix;
+        return $this->getFullDirectory() . DIRECTORY_SEPARATOR . $this->prefix;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFullDirectory()
+    {
+        $dir = $this->getDirectory();
+
+        $subDir = $this->getSubDirectory();
+
+        if (is_string($subDir)) {
+            return rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($subDir, DIRECTORY_SEPARATOR);
+        }
+
+        return $dir;
     }
 
     /**
@@ -241,12 +297,6 @@ class Store extends TaggableStore implements StoreContract
      */
     public function getDirectory()
     {
-        if (is_string($this->subDirectory)) {
-            $sep = DIRECTORY_SEPARATOR;
-
-            return rtrim($this->directory, $sep) . $sep . ltrim($this->subDirectory, $sep);
-        }
-
         return $this->directory;
     }
 
