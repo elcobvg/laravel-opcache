@@ -229,9 +229,17 @@ class Store extends TaggableStore implements StoreContract
          * Since we now able to set sub directory to keep files
          * in separated folders we will need to flush all files recursively
          */
-        $directory = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
+        $directory = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
 
         foreach ($directory as $filename => $file) {
+            if ($file->isDir()) {
+                @rmdir($filename);
+                continue;
+            }
+
             if ($this->enabled) {
                 opcache_invalidate($filename, true);
             }
