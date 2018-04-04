@@ -261,7 +261,7 @@ class Store extends TaggableStore implements StoreContract
      * @param  string  $key
      * @return string
      */
-    protected function filePath(string $key)
+    public function filePath(string $key)
     {
         return $this->prefixPath() . '-' . sha1($key);
     }
@@ -330,9 +330,21 @@ class Store extends TaggableStore implements StoreContract
     protected function writeFile(string $key, int $exp, $val)
     {
         // Write to temp file first to ensure atomicity. Use crc32 for speed
-        $tmp = $this->directory . '/' . crc32($key) . '-' . uniqid('', true) . '.tmp';
+        $dir = $this->getFullDirectory();
+        $this->checkDirectory($dir);
+        $tmp = $dir . DIRECTORY_SEPARATOR . crc32($key) . '-' . uniqid('', true) . '.tmp';
         file_put_contents($tmp, '<?php $exp = ' . $exp . '; $val = ' . $val . ';', LOCK_EX);
         return rename($tmp, $this->filePath($key));
+    }
+
+    /**
+     * @param $dir
+     */
+    protected function checkDirectory($dir)
+    {
+        if (! is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
     }
 
     /**
