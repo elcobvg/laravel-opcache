@@ -55,7 +55,7 @@ Since *all* PHP files will be cached with OPcache, it is not advisable to use it
 
 ### Caching Eloquent models
 
-Depending on how you've configured caching in your project, you may want to cache full Eloquent models. If so, base your model classes on `ElcoBvG\Opcache\Model` instead of the regular Eloquent base model class, so they can be retrieved correctly from cache.
+Depending on how you've configured caching in your project, you may want to cache full Eloquent models. If so, base your model classes on `ElcoBvg\Opcache\Model` instead of the regular Eloquent base model class, so they can be retrieved correctly from cache.
 
 ### References
 
