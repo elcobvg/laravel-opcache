@@ -93,6 +93,20 @@ class Store extends TaggableStore implements StoreContract
     }
 
     /**
+     * Determines whether the key exists within the cache.
+     *
+     * @param string $key
+     * @return bool
+     */
+    protected function exists($key)
+    {
+        if ($this->enabled && opcache_is_script_cached($this->filePath($key))) {
+            return true;
+        }
+        return file_exists($this->filePath($key));
+    }
+
+    /**
      * Retrieve an item from the cache by key.
      *
      * @param  string  $key
@@ -100,7 +114,9 @@ class Store extends TaggableStore implements StoreContract
      */
     public function get($key)
     {
-        @include $this->filePath($key);
+        if ($this->exists($key)) {
+            @include $this->filePath($key);
+        }
 
         if (isset($exp) && $exp < time()) {
             /*
@@ -142,8 +158,7 @@ class Store extends TaggableStore implements StoreContract
      */
     public function add($key, $value, $minutes = 0)
     {
-        if ($this->enabled && opcache_is_script_cached($this->filePath($key))
-            || file_exists($this->filePath($key))) {
+        if ($this->exists($key)) {
             return false;
         }
         return $this->put($key, $value, $minutes);
