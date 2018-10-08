@@ -20,6 +20,13 @@ class Store extends TaggableStore implements StoreContract
     protected $directory;
 
     /**
+     * The file cache sub directory
+     *
+     * @var string|null
+     */
+    protected $subDirectory;
+
+    /**
      * String that should be prepended to keys.
      *
      * @var string
@@ -38,7 +45,6 @@ class Store extends TaggableStore implements StoreContract
      *
      * @param  string    $prefix
      * @param  string    $directory
-     * @return void
      */
     public function __construct(string $prefix = '', string $directory = '')
     {
@@ -50,7 +56,11 @@ class Store extends TaggableStore implements StoreContract
         }
 
         $this->prefix = str_slug($prefix ?: config('app.name', 'opcache'), '-');
-        $this->directory = $directory ?: config('cache.stores.file.path');
+
+        /*
+         * In case if `OpCache` file path not being set we will use `file` driver path
+         */
+        $this->directory = $directory ?: config('cache.stores.opcache.path', config('cache.stores.file.path'));
     }
     
     /**
@@ -61,7 +71,25 @@ class Store extends TaggableStore implements StoreContract
      */
     public function tags($names)
     {
-        return new Repository($this, new TagSet($this, is_array($names) ? $names : func_get_args()));
+        $names = is_array($names) ? $names : func_get_args();
+
+        /*
+         * Now we are able to flush only tagged cache items
+         */
+        if (! empty($names)) {
+            $this->setSubDirectory($this->tagsSubDir($names));
+        }
+
+        return new Repository($this, new TagSet($this, $names));
+    }
+
+    /**
+     * @param array $names
+     * @return string
+     */
+    protected function tagsSubDir(array $names)
+    {
+        return implode('_', $names);
     }
 
     /**
@@ -151,7 +179,7 @@ class Store extends TaggableStore implements StoreContract
      *
      * @param  string  $key
      * @param  mixed   $value
-     * @return void
+     * @return bool
      */
     public function forever($key, $value)
     {
@@ -179,12 +207,50 @@ class Store extends TaggableStore implements StoreContract
      */
     public function flush()
     {
-        $files = glob($this->prefixPath() . '*');
+        return $this->clearCacheInDirectory($this->getDirectory());
+    }
 
-        if ($this->enabled) {
-            array_map('opcache_invalidate', $files);
+    /**
+     * @return bool
+     */
+    public function flushSub()
+    {
+        return $this->clearCacheInDirectory($this->getFullDirectory(), true);
+    }
+
+    /**
+     * @param $dir
+     * @param bool $removeDirectory
+     * @return bool
+     */
+    public function clearCacheInDirectory($dir, $removeDirectory = false)
+    {
+        /*
+         * Since we now able to set sub directory to keep files
+         * in separated folders we will need to flush all files recursively
+         */
+        $directory = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($directory as $filename => $file) {
+            if ($file->isDir()) {
+                @rmdir($filename);
+                continue;
+            }
+
+            if ($this->enabled) {
+                opcache_invalidate($filename, true);
+            }
+            @unlink($filename);
         }
-        return (bool) array_map('unlink', $files);
+
+        if ($removeDirectory) {
+            return @rmdir($dir);
+        }
+
+        return true;
     }
 
     /**
@@ -203,7 +269,7 @@ class Store extends TaggableStore implements StoreContract
      * @param  string  $key
      * @return string
      */
-    protected function filePath(string $key)
+    public function filePath(string $key)
     {
         return $this->prefixPath() . '-' . sha1($key);
     }
@@ -215,7 +281,50 @@ class Store extends TaggableStore implements StoreContract
      */
     public function prefixPath()
     {
-        return $this->directory . '/' . $this->prefix;
+        return $this->getFullDirectory() . DIRECTORY_SEPARATOR . $this->prefix;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFullDirectory()
+    {
+        $dir = $this->getDirectory();
+
+        $subDir = $this->getSubDirectory();
+
+        if (is_string($subDir)) {
+            return rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($subDir, DIRECTORY_SEPARATOR);
+        }
+
+        return $dir;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDirectory()
+    {
+        return $this->directory;
+    }
+
+    /**
+     * @param $subDirectory
+     * @return $this
+     */
+    public function setSubDirectory($subDirectory)
+    {
+        $this->subDirectory = $subDirectory;
+
+        return $this;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getSubDirectory()
+    {
+        return $this->subDirectory;
     }
 
     /**
@@ -229,9 +338,21 @@ class Store extends TaggableStore implements StoreContract
     protected function writeFile(string $key, int $exp, $val)
     {
         // Write to temp file first to ensure atomicity. Use crc32 for speed
-        $tmp = $this->directory . '/' . crc32($key) . '-' . uniqid('', true) . '.tmp';
+        $dir = $this->getFullDirectory();
+        $this->checkDirectory($dir);
+        $tmp = $dir . DIRECTORY_SEPARATOR . crc32($key) . '-' . uniqid('', true) . '.tmp';
         file_put_contents($tmp, '<?php $exp = ' . $exp . '; $val = ' . $val . ';', LOCK_EX);
         return rename($tmp, $this->filePath($key));
+    }
+
+    /**
+     * @param $dir
+     */
+    protected function checkDirectory($dir)
+    {
+        if (! is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
     }
 
     /**

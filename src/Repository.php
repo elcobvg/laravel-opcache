@@ -34,6 +34,6 @@ class Repository extends TaggedCache implements CacheContract
      */
     public function flush()
     {
-        $this->tags->getNames() ? $this->tags->reset() : $this->store->flush();
+        $this->tags->getNames() ? $this->store->flushSub() : $this->store->flush();
     }
 }

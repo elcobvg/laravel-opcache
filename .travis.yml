@@ -1,12 +1,26 @@
 language: php
 
+env:
+  global:
+    - TESTBENCH_VERSION=3.5.*
+    - PHPUNIT_VERSION=6.5.0
+
 php:
-  - 7.2
+    - 7.0.0
+    - 7.0.2
+    - 7.0.4
+
+matrix:
+  include:
+    - php: 7.2
+      env: TESTBENCH_VERSION=3.6.* PHPUNIT_VERSION=7.0.*
 
 before_script:
   - cp .env.travis .env
   - composer self-update
-  - composer install --no-interaction
+  - composer require orchestra/testbench:${TESTBENCH_VERSION} --no-update
+  - composer require phpunit/phpunit:${PHPUNIT_VERSION} --no-update
+  - composer install --prefer-source --no-interaction --dev
 
 script:
   - vendor/bin/phpunit

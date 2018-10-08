@@ -85,7 +85,11 @@ class OpcacheDriverTest extends TestCase
     public function testStoreAddSuccess()
     {
         $store = $this->getStore();
+
+        $store->forget('add-test');
+
         $this->assertTrue($store->add('add-test', 'add some value'));
+        $this->assertFalse($store->add('add-test', 'add another value'));
     }
 
     public function testStoreAddFail()
@@ -152,8 +156,28 @@ class OpcacheDriverTest extends TestCase
     public function testStoreTagFlush()
     {
         $store = $this->getStore();
-        $store->tags(['people', 'animals'])->put('tags-test', ['foo' => 'bar', 'baz' => 'boom']);
+
+        /*
+         * Illuminate\Cache\Repository::put(); will be executed there, so we need to set minutes explicitly
+         */
+        $store->tags(['people', 'animals'])->put('tags-test', ['foo' => 'bar', 'baz' => 'boom'], 1);
+
+        $people = ['John' => 'Doe'];
+
+        $store->tags(['people'])->put('tags-test', ['John' => 'Doe'], 1);
+
+        /*
+         *  Only cache that belongs to people and animals at the same time will be flushed
+         */
         $this->assertNull($store->tags(['people', 'animals'])->flush());
+        $this->assertNull($store->tags(['people', 'animals'])->get('tags-test'));
+
+        /*
+         *  Another tags was preserved
+         */
+        $result = $store->tags(['people'])->get('tags-test');
+
+        $this->assertEquals($people, $result);
     }
 
     public function testStoreRemember()
