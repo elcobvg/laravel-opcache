@@ -2,6 +2,7 @@
 
 namespace ElcoBvg\Opcache;
 
+use Illuminate\Support\Str;
 use Illuminate\Cache\TagSet;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Support\Facades\Log;
@@ -55,7 +56,7 @@ class Store extends TaggableStore implements StoreContract
             Log::warning('You do not have the Zend OPcache extension loaded!');
         }
 
-        $this->prefix = str_slug($prefix ?: config('app.name', 'opcache'), '-');
+        $this->prefix = Str::slug($prefix ?: config('app.name', 'opcache'), '-');
 
         /*
          * In case if `OpCache` file path not being set we will use `file` driver path
