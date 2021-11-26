@@ -141,7 +141,7 @@ class OpcacheDriverTest extends TestCase
     public function testStoreExtendExpiration()
     {
         $store = $this->getStore();
-        $store->put('expiration-test', 'two minutes', 2);
+        $store->put('expiration-test', 'two seconds', 2);
         $this->assertTrue($store->extendExpiration('expiration-test', 10));
     }
 
@@ -158,7 +158,7 @@ class OpcacheDriverTest extends TestCase
         $store = $this->getStore();
 
         /*
-         * Illuminate\Cache\Repository::put(); will be executed there, so we need to set minutes explicitly
+         * Illuminate\Cache\Repository::put(); will be executed there, so we need to set seconds explicitly
          */
         $store->tags(['people', 'animals'])->put('tags-test', ['foo' => 'bar', 'baz' => 'boom'], 1);
 
