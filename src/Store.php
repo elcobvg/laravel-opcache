@@ -144,7 +144,9 @@ class Store extends TaggableStore implements StoreContract
         $val = var_export($value, true);
 
         // HHVM fails at __set_state, so just use object cast for now
-        $val = str_replace('stdClass::__set_state', '(object)', $val);
+        if (defined('HHVM_VERSION')) {
+            $val = str_replace('stdClass::__set_state', '(object)', $val);
+        }
 
         return $this->writeFile($key, $this->expiration($seconds), $val);
     }
