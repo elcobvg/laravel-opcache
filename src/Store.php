@@ -132,21 +132,23 @@ class Store extends TaggableStore implements StoreContract
     }
 
     /**
-     * Store an item in the cache for a given number of minutes.
+     * Store an item in the cache for a given number of seconds.
      *
      * @param  string  $key
      * @param  mixed   $value
-     * @param  float|int  $minutes
+     * @param  float|int  $seconds
      * @return bool
      */
-    public function put($key, $value, $minutes = 0)
+    public function put($key, $value, $seconds = 0)
     {
         $val = var_export($value, true);
 
         // HHVM fails at __set_state, so just use object cast for now
-        $val = str_replace('stdClass::__set_state', '(object)', $val);
+        if (defined('HHVM_VERSION')) {
+            $val = str_replace('stdClass::__set_state', '(object)', $val);
+        }
 
-        return $this->writeFile($key, $this->expiration($minutes), $val);
+        return $this->writeFile($key, $this->expiration($seconds), $val);
     }
 
     /**
@@ -154,15 +156,15 @@ class Store extends TaggableStore implements StoreContract
      *
      * @param  string  $key
      * @param  mixed   $value
-     * @param  float|int  $minutes
+     * @param  float|int  $seconds
      * @return bool
      */
-    public function add($key, $value, $minutes = 0)
+    public function add($key, $value, $seconds = 0)
     {
         if ($this->exists($key)) {
             return false;
         }
-        return $this->put($key, $value, $minutes);
+        return $this->put($key, $value, $seconds);
     }
 
     /**
@@ -372,30 +374,29 @@ class Store extends TaggableStore implements StoreContract
     }
 
     /**
-     * Get the expiration time based on the given minutes.
+     * Get the expiration time based on the given seconds.
      *
-     * @param  float|int  $minutes
+     * @param  float|int  $seconds
      * @return int
      */
-    protected function expiration($minutes)
+    protected function expiration($seconds)
     {
-        $seconds = (int) $minutes * 60;
-        return $minutes === 0 ? 9999999999 : strtotime('+' . $seconds . ' seconds');
+        return strtotime('+' . ($seconds ?: 9999999999) . ' seconds');
     }
 
     /**
-     * Extend expiration time with given minutes
+     * Extend expiration time with given seconds
      *
      * @param  string $key
-     * @param  int    $minutes
+     * @param  int    $seconds
      * @return bool
      */
-    public function extendExpiration(string $key, int $minutes = 1)
+    public function extendExpiration(string $key, int $seconds = 1)
     {
         @include $this->filePath($key);
 
         if (isset($exp)) {
-            $extended = strtotime('+' . $minutes . ' minutes', $exp);
+            $extended = strtotime('+' . $seconds . ' seconds', $exp);
             return $this->writeFile($key, $extended, var_export($val, true));
         }
         return false;

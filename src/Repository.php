@@ -13,16 +13,16 @@ class Repository extends TaggedCache implements CacheContract
      * Override parent method to avoid cache slamming ('thundering herd problem')
      *
      * @param  string  $key
-     * @param  \DateTimeInterface|\DateInterval|float|int  $minutes
+     * @param  \DateTimeInterface|\DateInterval|float|int  $seconds
      * @param  \Closure  $callback
      * @return mixed
      */
-    public function remember($key, $minutes, Closure $callback)
+    public function remember($key, $seconds, Closure $callback)
     {
         if (is_null($value = $this->get($key))) {
             // Extend expiration of cache file so we have time to generate a new one
             $this->store->extendExpiration($this->itemKey($key), 10);
-            $this->put($key, $value = $callback(), $minutes);
+            $this->put($key, $value = $callback(), $seconds);
         }
         return $value;
     }
